@@ -56,6 +56,12 @@ class ScrollWatchService : AccessibilityService() {
         // === 페어 캔슬(대칭 튐 제거) ===
         private const val PAIR_MS = 140L           // 연속 이벤트 간 시간
         private const val PAIR_TOL_PX = 120        // | |dy1|-|dy2| | 가 이내면 대칭으로 간주
+
+        // ShortsDetector 상태
+        private var lastFeedKind: FeedKind = FeedKind.OTHER
+        private var lastFeedCheckAt = 0L
+        private const val FEED_CHECK_INTERVAL_MS = 250L   // 과도 호출 방지(디바운스)
+
     }
 
     // ===== 상태 =====
@@ -117,9 +123,9 @@ class ScrollWatchService : AccessibilityService() {
                     or AccessibilityEvent.TYPE_GESTURE_DETECTION_END)
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             notificationTimeout = 50
-            flags = (AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
-                    or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-                    or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS)
+            flags = (AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS            // viewIdResourceName 접근
+                    or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                    or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)
         }
         Log.i("ScrollWatch", "Service connected")
     }
@@ -129,6 +135,7 @@ class ScrollWatchService : AccessibilityService() {
     // ===== 이벤트 처리 =====
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
+            tickShortsDetect()
             when (event.eventType) {
                 AccessibilityEvent.TYPE_TOUCH_INTERACTION_START -> {
                     val win = event.windowId
@@ -420,5 +427,10 @@ class ScrollWatchService : AccessibilityService() {
         this > 0 -> 1
         this < 0 -> -1
         else -> 0
+    }
+
+    private fun tickShortsDetect() {
+        val res = ShortsDetector.detect(rootInActiveWindow)
+        ShortsDetector.log(res) // I/ShortsDetector: detect => YOUTUBE_SHORTS / INSTAGRAM_REELS / OTHER
     }
 }
