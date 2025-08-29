@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DDDiary</string>
+    <string name="acc_desc_scroll_watch">스크롤 감지 접근성 서비스</string>
 </resources>
