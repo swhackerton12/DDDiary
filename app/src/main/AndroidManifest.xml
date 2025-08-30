@@ -1,22 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.woohyun.dddiary"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.DDDiary">
-
-        <service
-            android:name=".ScrollWatchService"
-            android:exported="false"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/scroll_watch_service" />
-        </service>
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
@@ -27,5 +17,20 @@
             </intent-filter>
         </activity>
 
+        <!-- 접근성 서비스 -->
+        <service
+            android:name=".feature.accessibility.ScrollWatchService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/scroll_watch_service" />
+        </service>
+
     </application>
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

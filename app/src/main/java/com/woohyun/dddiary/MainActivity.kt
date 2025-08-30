@@ -1,49 +1,40 @@
 package com.woohyun.dddiary
 
-import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.woohyun.dddiary.ui.theme.DDDiaryTheme
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.compose.rememberNavController
+import com.woohyun.dddiary.core.design.AppTheme
+import com.woohyun.dddiary.navigation.AppNavHost
+import com.woohyun.dddiary.navigation.Routes
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPostNotification =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (Build.VERSION.SDK_INT >= 33) {
+            requestPostNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         setContent {
-            DDDiaryTheme {
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Home {
-                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    }
+            val rootNav = rememberNavController()
+            val start = Routes.Onboarding // DataStore 붙이면 MainShell로 분기
+
+            AppTheme {
+                LaunchedEffect(Unit) {
+                    // 초기 훅 필요 시 사용
                 }
+                AppNavHost(nav = rootNav, start = start)
             }
         }
     }
-}
-
-@Composable
-private fun Home(onOpenAccessibility: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("ScrollWatch Demo", style = MaterialTheme.typography.titleLarge)
-        Button(onClick = onOpenAccessibility) { Text("접근성 설정 열기") }
-        Text("켜고 나서 다른 앱에서 스크롤하면 Logcat(tag: ScrollWatch)에 기록됩니다.")
-    }
-}
-
-@Preview
-@Composable
-private fun PreviewHome() {
-    DDDiaryTheme { Home({}) }
 }

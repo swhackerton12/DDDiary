@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">DDDiary</string>
-    <string name="acc_desc_scroll_watch">스크롤 감지 접근성 서비스</string>
+    <string name="acc_desc">유튜브/인스타/틱톡 사용 중 스크롤·화면 콘텐츠 변화를 감지하여 리포트를 제공합니다.</string>
+    <string name="acc_desc_scroll_watch">유튜브/인스타/틱톡 사용 중 스크롤·화면 콘텐츠 변화를 감지하여 리포트를 제공합니다.</string>
 </resources>

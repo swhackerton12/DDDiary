@@ -1,4 +1,4 @@
-package com.woohyun.dddiary
+package com.woohyun.dddiary.feature.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
@@ -10,6 +10,8 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.woohyun.dddiary.FeedKind
+import com.woohyun.dddiary.ShortsDetector
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -123,14 +125,17 @@ class ScrollWatchService : AccessibilityService() {
                     or AccessibilityEvent.TYPE_GESTURE_DETECTION_END)
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             notificationTimeout = 50
-            flags = (AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS            // viewIdResourceName 접근
-                    or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-                    or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)
+            flags =
+                (AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS            // viewIdResourceName 접근
+                        or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                        or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)
         }
         Log.i("ScrollWatch", "Service connected")
     }
 
-    override fun onInterrupt() { Log.w("ScrollWatch", "Service interrupted") }
+    override fun onInterrupt() {
+        Log.w("ScrollWatch", "Service interrupted")
+    }
 
     // ===== 이벤트 처리 =====
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -202,20 +207,26 @@ class ScrollWatchService : AccessibilityService() {
                     Log.d("ScrollWatch", "BOUNCE_FILTERED dy=$dy (guard)")
                 }
             }
-        } finally { src.recycle() }
+        } finally {
+            src.recycle()
+        }
     }
 
     private fun handleViewScrolled(event: AccessibilityEvent) {
         val src = event.source ?: return
         try {
             val dyRaw = computeDy(event, src)
-            Log.d("ScrollWatch",
-                "SCROLLED pkg=${event.packageName} host=${event.className} dy=$dyRaw idx=${event.toIndex}/${event.itemCount}")
+            Log.d(
+                "ScrollWatch",
+                "SCROLLED pkg=${event.packageName} host=${event.className} dy=$dyRaw idx=${event.toIndex}/${event.itemCount}"
+            )
 
             aggregateVertical(event, dyRaw)
         } catch (t: Throwable) {
             Log.e("ScrollWatch", "handleViewScrolled crash", t)
-        } finally { src.recycle() }
+        } finally {
+            src.recycle()
+        }
     }
 
     // ===== dy 계산: deltaY → scrollY → 앵커 top =====
@@ -236,7 +247,10 @@ class ScrollWatchService : AccessibilityService() {
 
     private fun inferDyFromAnchor(event: AccessibilityEvent): Int {
         val root = rootInActiveWindow ?: return 0
-        val top = try { pickAnchorTop(root, event.packageName) } finally { /* nodes recycled inside */ } ?: return 0
+        val top = try {
+            pickAnchorTop(root, event.packageName)
+        } finally { /* nodes recycled inside */
+        } ?: return 0
         val prev = lastAnchorTopByWin.put(event.windowId, top) ?: return 0
         val raw = top - prev
         return -raw // 콘텐츠 DOWN → dy > 0
@@ -253,7 +267,8 @@ class ScrollWatchService : AccessibilityService() {
             val n = q.removeFirst(); steps++; visited.add(n)
             val samePkg = targetPkg == null || n.packageName == targetPkg
             if (samePkg && n.isVisibleToUser &&
-                ((n.text?.isNotBlank() == true) || (n.contentDescription?.isNotBlank() == true))) {
+                ((n.text?.isNotBlank() == true) || (n.contentDescription?.isNotBlank() == true))
+            ) {
                 val r = Rect(); n.getBoundsInScreen(r)
                 if (bestTop == null || r.top < bestTop!!) bestTop = r.top
             }
@@ -310,7 +325,10 @@ class ScrollWatchService : AccessibilityService() {
             // 같은 방향 누적 대비 일정 비율 미만이면 무시
             val threshold = max(1L, (s.sameAbsSinceLock * 0.85).toLong()) // 85% 이하면 노이즈로
             if (s.oppAbsSinceLock <= threshold) {
-                Log.v("ScrollWatch", "SNAP_SUPPRESS dy=$dy oppAbs=${s.oppAbsSinceLock} <= thr=$threshold")
+                Log.v(
+                    "ScrollWatch",
+                    "SNAP_SUPPRESS dy=$dy oppAbs=${s.oppAbsSinceLock} <= thr=$threshold"
+                )
                 // 페어 기준 갱신만 하고 합산은 하지 않음
                 s.lastDyForPair = dy
                 s.lastDyForPairAt = now
@@ -347,7 +365,8 @@ class ScrollWatchService : AccessibilityService() {
         s.lastDyForPairAt = now
 
         // 빠른 플릭: 부호 안정 + 속도/가속도 높음 + 최소거리
-        val stableSign = (s.posVotes >= 3 && s.negVotes == 0) || (s.negVotes >= 3 && s.posVotes == 0)
+        val stableSign =
+            (s.posVotes >= 3 && s.negVotes == 0) || (s.negVotes >= 3 && s.posVotes == 0)
         if (stableSign && (s.velEma >= FAST_VEL || accel >= ACCEL_SPIKE) && s.absSumDy >= FAST_MIN_PX) {
             finalizeVertical(win); return
         }
@@ -381,8 +400,14 @@ class ScrollWatchService : AccessibilityService() {
         val fastFlick = (s.velEma >= FAST_VEL && s.absSumDy >= FAST_MIN_PX)
 
         if (!fastFlick && (durationMs < MIN_DURATION_MS || s.absSumDy < MIN_TOTAL_PX)) {
-            Log.i("ScrollWatch",
-                "INTENT: UNKNOWN (short/too small) dur=${durationMs}ms absDy=${s.absSumDy} vel=${"%.3f".format(s.velEma)} implicit=${s.implicit}")
+            Log.i(
+                "ScrollWatch",
+                "INTENT: UNKNOWN (short/too small) dur=${durationMs}ms absDy=${s.absSumDy} vel=${
+                    "%.3f".format(
+                        s.velEma
+                    )
+                } implicit=${s.implicit}"
+            )
             return
         }
 
@@ -403,13 +428,29 @@ class ScrollWatchService : AccessibilityService() {
 
         // 로그 + 반동 가드 설치
         when (verdictSign) {
-            1 -> Log.i("ScrollWatch",
-                "INTENT: SWIPE_UP (content=DOWN) sumDy=${s.sumDy} absDy=${s.absSumDy} vel=${"%.3f".format(s.velEma)} votes=${s.posVotes}/${s.negVotes} implicit=${s.implicit} lock=+")
-            -1 -> Log.i("ScrollWatch",
-                "INTENT: SWIPE_DOWN (content=UP) sumDy=${s.sumDy} absDy=${s.absSumDy} vel=${"%.3f".format(s.velEma)} votes=${s.posVotes}/${s.negVotes} implicit=${s.implicit} lock=-")
+            1 -> Log.i(
+                "ScrollWatch",
+                "INTENT: SWIPE_UP (content=DOWN) sumDy=${s.sumDy} absDy=${s.absSumDy} vel=${
+                    "%.3f".format(
+                        s.velEma
+                    )
+                } votes=${s.posVotes}/${s.negVotes} implicit=${s.implicit} lock=+"
+            )
+
+            -1 -> Log.i(
+                "ScrollWatch",
+                "INTENT: SWIPE_DOWN (content=UP) sumDy=${s.sumDy} absDy=${s.absSumDy} vel=${
+                    "%.3f".format(
+                        s.velEma
+                    )
+                } votes=${s.posVotes}/${s.negVotes} implicit=${s.implicit} lock=-"
+            )
+
             else -> {
-                Log.i("ScrollWatch",
-                    "INTENT: UNKNOWN (tie) absDy=${s.absSumDy} vel=${"%.3f".format(s.velEma)} implicit=${s.implicit} lock=0")
+                Log.i(
+                    "ScrollWatch",
+                    "INTENT: UNKNOWN (tie) absDy=${s.absSumDy} vel=${"%.3f".format(s.velEma)} implicit=${s.implicit} lock=0"
+                )
             }
         }
 

@@ -33,22 +33,22 @@ object ShortsDetector {
 
     // 액션 스택 키워드(우측 버튼군)
     private val ACTION_WORDS = listOf(
-        "dislike","dislikes","싫어요",
-        "comment","comments","댓글",
-        "share","공유",
-        "subscribe","구독",
-        "original sound","원본 사운드",
-        "like","likes","좋아요",
-        "follow","팔로우",
-        "audio","오디오",
+        "dislike", "dislikes", "싫어요",
+        "comment", "comments", "댓글",
+        "share", "공유",
+        "subscribe", "구독",
+        "original sound", "원본 사운드",
+        "like", "likes", "좋아요",
+        "follow", "팔로우",
+        "audio", "오디오",
     )
 
     // 점수 임계
     private const val SCORE_TITLE_HIT = 2      // 뷰ID/클래스에 short|reels
-    private const val SCORE_TEXT_HIT   = 1      // 텍스트/콘텐츠 설명 키워드
+    private const val SCORE_TEXT_HIT = 1      // 텍스트/콘텐츠 설명 키워드
     private const val SCORE_LAYOUT_HIT = 7      // 레이아웃 단서(우측 액션 스택/세로 페이지)
-    private const val THRESHOLD_SCORE  = 8      // 이 이상이면 해당 피드로 판정
-    private const val MAX_NODES        = 900    // BFS 상한
+    private const val THRESHOLD_SCORE = 8      // 이 이상이면 해당 피드로 판정
+    private const val MAX_NODES = 900    // BFS 상한
 
     /** 진입점 */
     fun detect(root: AccessibilityNodeInfo?): FeedDetectResult {
@@ -76,8 +76,12 @@ object ShortsDetector {
         val reasons = mutableListOf<String>()
 
         // 패키지 자체 가점
-        if (isYT) { scoreYT += 2; reasons += "yt:pkg" }
-        if (isIG) { scoreIG += 2; reasons += "ig:pkg" }
+        if (isYT) {
+            scoreYT += 2; reasons += "yt:pkg"
+        }
+        if (isIG) {
+            scoreIG += 2; reasons += "ig:pkg"
+        }
 
         // 우측 액션 스택/세로 페이지 단서 집계
         var rightStackCount = 0
@@ -97,9 +101,10 @@ object ShortsDetector {
             steps++
             visited.add(n)
 
-            val id  = n.viewIdResourceName?.lowercase().orEmpty()
-            val text = (n.text?.toString().orEmpty() + " " + n.contentDescription?.toString().orEmpty())
-                .lowercase()
+            val id = n.viewIdResourceName?.lowercase().orEmpty()
+            val text =
+                (n.text?.toString().orEmpty() + " " + n.contentDescription?.toString().orEmpty())
+                    .lowercase()
 
             // ---------- 공통: 우측 액션 스택 감지 ----------
             run {
@@ -136,7 +141,9 @@ object ShortsDetector {
 
         // ---------- YT 휴리스틱 ----------
         if (isYT) {
-            if (hasYTTitle) { scoreYT += SCORE_TITLE_HIT; reasons += "yt:id|cls:short*" }
+            if (hasYTTitle) {
+                scoreYT += SCORE_TITLE_HIT; reasons += "yt:id|cls:short*"
+            }
             if (hasYTText) {
                 scoreYT += SCORE_TEXT_HIT
                 reasons += "yt:text:keyword"
@@ -145,7 +152,9 @@ object ShortsDetector {
 
         // ---------- IG 휴리스틱 ----------
         if (isIG) {
-            if (hasIGTitle) { scoreIG += SCORE_TITLE_HIT; reasons += "ig:id|cls:reel*" }
+            if (hasIGTitle) {
+                scoreIG += SCORE_TITLE_HIT; reasons += "ig:id|cls:reel*"
+            }
             if (hasIGText) {
                 scoreIG += SCORE_TEXT_HIT
                 reasons += "ig:text:keyword"
@@ -184,6 +193,11 @@ object ShortsDetector {
 
     /** 디버깅 로그 */
     fun log(result: FeedDetectResult) {
-        Log.i("ShortsDetector", "detect => ${result.kind} p=${"%.2f".format(result.confidence)} reasons=${result.reasons.joinToString(",")}")
+        Log.i(
+            "ShortsDetector",
+            "detect => ${result.kind} p=${"%.2f".format(result.confidence)} reasons=${
+                result.reasons.joinToString(",")
+            }"
+        )
     }
 }
